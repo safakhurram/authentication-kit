@@ -1,0 +1,29 @@
+/* Classes prefixed "ak-" so they never clash with your app. */
+.ak-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 40%, transparent 80%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 40%, transparent 80%);
+}
+
+.ak-gradient-text {
+  background: linear-gradient(90deg, #ffffff 0%, rgb(var(--ak-accent)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ak-btn {
+  background-color: rgb(var(--ak-accent));
+  color: #000;
+  transition: all 0.2s ease;
+}
+.ak-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 0 30px rgb(var(--ak-accent) / 0.4);
+  transform: translateY(-1px);
+}
+.ak-btn:active:not(:disabled) { transform: scale(0.98); }
+.ak-btn:disabled { opacity: 0.7; cursor: not-allowed; }
