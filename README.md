@@ -1,91 +1,199 @@
-# Auth Kit — ready-made Login page (React + Supabase + Tailwind)
+## Developer Integration Guide
 
-Ek baar setup, phir kisi bhi project mein login system ready:
+Integrate Auth Kit into your existing React application to add authentication features without building the entire authentication flow from scratch.
 
-- Sign In / Sign Up (username + email + password)
-- Email ke 6-digit code se signup verification
-- Login par optional email code step
-- Forgot password + Reset password page
-- Google login
-- `<AuthGate>`: logged-out user ko login page dikhata hai
-- Branding, colors, text, features: sirf `src/auth-kit/auth.config.js` se
+### 1. Requirements
 
-## 1. Supabase setup (5 min)
+- Node.js and npm
+- React application using Vite
+- A Supabase project
+- Tailwind CSS (for the Auth Kit styling)
 
-1. https://supabase.com par project banao. **Project Settings -> API** se URL aur anon key lo.
-2. `.env.example` ko `.env` copy karo aur dono values bharo.
-3. **SQL Editor** mein `supabase/setup.sql` run karo (profile table `users` + RLS). Profile table nahi chahiye to config mein `profile.sync: false` kar do.
-4. **Authentication -> Email Templates**: "Confirm signup" aur "Magic Link" dono templates mein `{{ .Token }}` hona chahiye, warna email mein 6-digit code nahi, sirf link aayega.
-5. **Authentication -> URL Configuration**: Site URL aur Redirect URLs mein apna URL daalo (jaise `http://localhost:5173` aur `http://localhost:5173/reset-password`).
-6. Google login (default mein band hai): chahiye to pehle **Authentication -> Providers -> Google** enable karo (Google Cloud ka Client ID/Secret lagta hai), phir config mein `features.google: true`.
+### 2. Install Dependencies
 
-## 2. Chalana
+Install the required packages in your existing project:
+
+```bash
+npm install @supabase/supabase-js lucide-react
+```
+
+Make sure your project has the dependencies required by Auth Kit. If any additional dependencies are used by the kit, install them as well.
+
+### 3. Copy the Auth Kit
+
+Copy the `src/auth-kit/` directory into your React project's `src/` directory.
+
+Your project structure should look similar to this:
+
+```text
+my-app/
+├── src/
+│   ├── auth-kit/
+│   │   ├── index.js
+│   │   ├── AuthProvider.jsx
+│   │   ├── AuthGate.jsx
+│   │   └── ...
+│   ├── App.jsx
+│   └── main.jsx
+├── .env
+├── package.json
+└── ...
+```
+
+The filenames inside `auth-kit/` may differ depending on the version you are using. Preserve the original directory structure when copying the files.
+
+### 4. Configure Supabase
+
+Create a `.env` file in your project's root directory:
+
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_PUBLIC_KEY
+```
+
+Replace the example values with your Supabase Project URL and public client key.
+
+Next, run the SQL script provided with Auth Kit:
+
+1. Open your Supabase dashboard.
+2. Navigate to **SQL Editor**.
+3. Open `supabase/setup.sql` from the Auth Kit repository.
+4. Paste the SQL into a new query and click **Run**.
+
+Do not expose your Supabase service-role key in frontend code.
+
+### 5. Configure Tailwind CSS
+
+If your project uses Tailwind CSS and the Auth Kit relies on its custom color tokens, add the following under `theme.extend.colors` in `tailwind.config.js`:
+
+```js
+ak: {
+  bg: 'rgb(var(--ak-bg) / <alpha-value>)',
+  card: 'rgb(var(--ak-card) / <alpha-value>)',
+  field: 'rgb(var(--ak-field) / <alpha-value>)',
+  accent: 'rgb(var(--ak-accent) / <alpha-value>)',
+},
+```
+
+Keep your existing Tailwind configuration and merge these values into it. Do not replace the entire configuration.
+
+### 6. Wrap Your Application
+
+Import the authentication components from the Auth Kit entry point:
+
+```jsx
+import { AuthProvider, AuthGate } from './auth-kit';
+
+function MyApp({ user, signOut }) {
+  return (
+    <main>
+      <h1>Welcome, {user.username || user.email}</h1>
+
+      <button onClick={signOut}>
+        Sign Out
+      </button>
+
+      {/* Render your existing application here */}
+    </main>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider config={{ brand: { name: 'MyApp' } }}>
+      <AuthGate>
+        {({ user, signOut }) => (
+          <MyApp user={user} signOut={signOut} />
+        )}
+      </AuthGate>
+    </AuthProvider>
+  );
+}
+```
+
+Replace `MyApp` and the example content with your application's actual UI. Auth Kit should handle the authentication flow while your application renders its own content for authenticated users.
+
+**Important:** Confirm the exported component names and import path against the version of Auth Kit you copied.
+
+### 7. Access the Authenticated User
+
+Inside a component rendered within `AuthProvider`, use the `useAuth()` hook:
+
+```jsx
+import { useAuth } from './auth-kit';
+
+export default function Profile() {
+  const { user, signOut } = useAuth();
+
+  return (
+    <div>
+      <p>Email: {user?.email}</p>
+      <p>Username: {user?.username}</p>
+
+      <button onClick={signOut}>
+        Sign Out
+      </button>
+    </div>
+  );
+}
+```
+
+Use optional chaining when user data may not be available yet.
+
+### 8. Use an Existing Supabase Client (Optional)
+
+If your application already has a Supabase client, reuse it instead of creating another client, provided Auth Kit supports client injection.
+
+```jsx
+import { setSupabaseClient } from './auth-kit';
+import { supabase } from './lib/supabase';
+
+setSupabaseClient(supabase);
+```
+
+Call `setSupabaseClient()` once during application initialization, before rendering the authentication components. Verify the exact export and initialization requirements in your Auth Kit version.
+
+### 9. Google Login (Optional)
+
+Google Login requires additional configuration outside the application code.
+
+1. Create a Google OAuth client in Google Cloud Console.
+2. Add the Supabase callback URL to the OAuth client's authorized redirect URIs.
+3. Enable Google under **Supabase → Authentication → Sign In / Providers**.
+4. Add the Google Client ID and Client Secret to Supabase.
+5. Configure the application URLs under **Supabase → Authentication → URL Configuration**.
+6. Enable the Google feature in the Auth Kit configuration.
+
+Google Login will not work until the provider is configured correctly in Supabase.
+
+### 10. Run and Test
+
+Start your application:
 
 ```bash
 npm install
 npm run dev
 ```
 
-## 3. Apne project mein lagana
+Open the local URL printed by Vite.
 
-1. `src/auth-kit/` folder copy karo.
-2. `npm i @supabase/supabase-js lucide-react`
-3. `tailwind.config.js` ke `theme.extend.colors` mein add karo:
-   ```js
-   ak: {
-     bg: 'rgb(var(--ak-bg) / <alpha-value>)',
-     card: 'rgb(var(--ak-card) / <alpha-value>)',
-     field: 'rgb(var(--ak-field) / <alpha-value>)',
-     accent: 'rgb(var(--ak-accent) / <alpha-value>)',
-   },
-   ```
-4. App wrap karo:
-   ```jsx
-   import { AuthProvider, AuthGate } from './auth-kit';
+Test the following flows:
 
-   <AuthProvider config={{ brand: { name: 'MyApp' } }}>
-     <AuthGate>{({ user, signOut }) => <MyApp user={user} signOut={signOut} />}</AuthGate>
-   </AuthProvider>
-   ```
-5. Kisi bhi component mein user chahiye: `const { user, signOut } = useAuth();`
+- Sign up and email verification
+- Sign in with valid credentials
+- Incorrect password and invalid verification code
+- Sign out and sign back in
+- Forgot password and password reset
+- Session persistence after refresh
+- Google Login, if enabled
+- User profile synchronization, if enabled
 
-Agar aapke app mein pehle se Supabase client hai: render se pehle ek baar `setSupabaseClient(myClient)` call karo.
+If Vite uses a different port, update the Supabase Site URL and Redirect URLs to match the actual application URL.
 
-Landing page ke saath: `<AuthGate fallback={showAuth ? <AuthPage onBack={...} /> : <Landing />}>`
+### Integration Notes
 
-## Config
-
-`src/auth-kit/auth.config.js` mein, ya `<AuthProvider config={{...}}>` se override:
-
-| Key | Kaam |
-|---|---|
-| `brand.name`, `brand.logo` | Naam aur logo |
-| `theme` | Colors (`"R G B"` format) |
-| `features.signUp / google / forgotPassword / loginCode` | Features on/off |
-| `minPasswordLength` | Password ki kam se kam length |
-| `profile.table / sync` | Profile table ka naam, ya sync band |
-| `routes.resetPassword / afterReset` | Reset link ka path aur uske baad redirect |
-| `text.*` | Subtitles |
-
-`/reset-password` route ke liye SPA fallback chahiye (Vite dev mein by default hai; production host par sab paths `index.html` par bhejo).
-
-## Security note (zaroor padhein)
-
-`features.loginCode` ek **email code step** hai, asli server-enforced 2FA nahi. Supabase par email-code login alag se bhi available hota hai, aur server par "password + code dono zaroori" ka rule nahi hai. Banking jaisi security chahiye to Supabase ka TOTP MFA (`supabase.auth.mfa`) use karo.
-
-Is kit mein password check ke baad half-session turant local sign-out kar di jati hai, to app ko code verify hone se pehle user kabhi logged-in nahi dikhta.
-
-## Structure
-
-```
-src/auth-kit/
-  AuthProvider.jsx        session + useAuth()
-  AuthGate.jsx            logged-in / logged-out switch
-  AuthPage.jsx            sign in / up / forgot / code screens
-  ResetPasswordPage.jsx
-  AuthShell.jsx           card, brand, theme
-  ui.jsx, auth.css        shared UI
-  supabaseClient.js
-  auth.config.js          <- edit this
-supabase/setup.sql
-```
+- Keep the Auth Kit source files together when copying them into an existing project.
+- Merge environment variables and Tailwind configuration instead of overwriting existing settings.
+- Never commit real secrets or `.env` files to GitHub.
+- Configure Supabase Row Level Security policies for any tables containing user data.
+- Test the complete authentication flow with your own Supabase project before deploying to production.
